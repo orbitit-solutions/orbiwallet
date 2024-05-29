@@ -1,0 +1,6 @@
+.github
+.prettierrc
+*.json
+*.mjs
+build
+.next
