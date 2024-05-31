@@ -19,8 +19,8 @@ const config = {
 		},
 		extend: {
 			colors: {
-				'brand-light': '#48C2F9',
-				'brand-dark': '#0d68ce',
+				'brand-light': 'hsl(var(--brand-light))',
+				'brand-dark': 'hsl(var(--brand-dark))',
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
