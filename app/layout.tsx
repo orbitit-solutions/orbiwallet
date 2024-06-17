@@ -1,9 +1,11 @@
+import './globals.css';
+
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 
-import './globals.css';
 import { QueryProvider } from '@/providers/query-provider';
+import { Toaster } from '@/components/ui/sonner';
 
 const poppins = Poppins({
 	subsets: ['latin'],
@@ -24,7 +26,10 @@ export default function RootLayout({
 		<ClerkProvider>
 			<html lang="en">
 				<body className={poppins.className}>
-					<QueryProvider>{children}</QueryProvider>
+					<QueryProvider>
+						<Toaster />
+						{children}
+					</QueryProvider>
 				</body>
 			</html>
 		</ClerkProvider>
