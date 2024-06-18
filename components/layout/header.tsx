@@ -1,10 +1,10 @@
 import { ClerkLoaded, ClerkLoading } from '@clerk/nextjs';
-import { Loader2 } from 'lucide-react';
 
 import HeaderLogo from './header-logo';
 import Navigation from './navigation';
 import UserInfo from './user-info';
 import RestrictiveContainer from '../container/restrictive-container';
+import LoadingSpinner from '../ui/loading-spinner';
 
 function Header() {
 	return (
@@ -14,7 +14,7 @@ function Header() {
 					<HeaderLogo classes="hidden lg:inline-block" />
 					<Navigation />
 					<ClerkLoading>
-						<Loader2 className="size-8 animate-spin text-brand-dark" />
+						<LoadingSpinner />
 					</ClerkLoading>
 					<ClerkLoaded>
 						<UserInfo />
