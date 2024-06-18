@@ -1,19 +1,18 @@
-import { ClerkLoaded, ClerkLoading, UserButton } from '@clerk/nextjs';
+import { ClerkLoaded, ClerkLoading } from '@clerk/nextjs';
 import { Loader2 } from 'lucide-react';
 
 import HeaderLogo from './header-logo';
 import Navigation from './navigation';
 import UserInfo from './user-info';
+import RestrictiveContainer from '../container/restrictive-container';
 
 function Header() {
 	return (
-		<header className="px-4 lg:px-14 py-6">
-			<div className="max-w-screen-2xl mx-auto">
-				<div className="flex items-center justify-between">
-					<div className="flex items-center lg:gap-x-16">
-						<HeaderLogo classes="hidden lg:inline-block" />
-						<Navigation />
-					</div>
+		<header className="px-3 lg:px-10 py-6">
+			<RestrictiveContainer>
+				<div className="flex items-center justify-between gap-x-2">
+					<HeaderLogo classes="hidden lg:inline-block" />
+					<Navigation />
 					<ClerkLoading>
 						<Loader2 className="size-8 animate-spin text-brand-dark" />
 					</ClerkLoading>
@@ -21,7 +20,7 @@ function Header() {
 						<UserInfo />
 					</ClerkLoaded>
 				</div>
-			</div>
+			</RestrictiveContainer>
 		</header>
 	);
 }

@@ -11,16 +11,9 @@ function UserInfo() {
 				appearance={{ elements: { avatarBox: 'size-10' } }}
 			/>
 			{user && (
-				<div className="hidden sm:block">
-					<p className="font-medium text-lg">
-						{user.firstName ? `Hello, ${user.firstName}` : 'Welcome back'}
-					</p>
-					{user.primaryEmailAddress && (
-						<p className="font text-xs text-slate-600">
-							{user.primaryEmailAddress.emailAddress}
-						</p>
-					)}
-				</div>
+				<p className="hidden sm:block font-medium text-sm">
+					{user.firstName ? `Hello, ${user.firstName}` : 'Welcome back'}
+				</p>
 			)}
 		</div>
 	);

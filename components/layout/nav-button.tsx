@@ -7,9 +7,10 @@ interface NavButtonProps {
 	link: { href: string; label: string };
 	isActive?: boolean;
 	classes?: string;
+	onClick?: () => void;
 }
 
-function NavButton({ link, isActive, classes }: NavButtonProps) {
+function NavButton({ link, isActive, classes, onClick }: NavButtonProps) {
 	return (
 		<Button
 			asChild
@@ -20,7 +21,9 @@ function NavButton({ link, isActive, classes }: NavButtonProps) {
 				isActive && 'bg-brand-dark/20',
 			)}
 		>
-			<Link href={link.href}>{link.label}</Link>
+			<Link href={link.href} {...(onClick && { onClick })}>
+				{link.label}
+			</Link>
 		</Button>
 	);
 }
