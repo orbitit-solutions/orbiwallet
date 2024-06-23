@@ -58,6 +58,8 @@ export function DataTable<TData, TValue>({
 		state: { sorting, columnFilters, rowSelection },
 	});
 
+	const selectedRows = table.getFilteredSelectedRowModel().rows;
+
 	return (
 		<div>
 			<div className="flex items-center justify-between py-4">
@@ -67,10 +69,19 @@ export function DataTable<TData, TValue>({
 					onChange={e => table.getColumn(filterKey)?.setFilterValue(e.target.value)}
 					className="max-w-sm"
 				/>
-				{table.getFilteredSelectedRowModel().rows.length > 0 && (
-					<Button size="sm" variant="outline" className="text-xs" disabled={disabled}>
-						<Trash className="size-4 mr-2" /> Delete{' '}
-						{table.getFilteredSelectedRowModel().rows.length} row(s)
+				{selectedRows.length > 0 && (
+					<Button
+						size="sm"
+						variant="outline"
+						className="text-xs"
+						disabled={disabled}
+						onClick={() => {
+							onDelete(selectedRows);
+							table.resetRowSelection();
+						}}
+					>
+						<Trash className="size-4 mr-2" /> Delete {selectedRows.length} row
+						{selectedRows.length > 1 ? 's' : ''}
 					</Button>
 				)}
 			</div>
