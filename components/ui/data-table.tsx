@@ -26,6 +26,9 @@ import {
 import { Button } from './button';
 import { Input } from './input';
 
+import { useConfirm } from '@/hooks/use-confirm';
+import ConfirmDialog from './confirm-dialog';
+
 interface DataTableProps<TData, TValue> {
 	columns: ColumnDef<TData, TValue>[];
 	data: TData[];
@@ -58,10 +61,28 @@ export function DataTable<TData, TValue>({
 		state: { sorting, columnFilters, rowSelection },
 	});
 
+	const { isOpen, confirm, handleConfirm, handleCancel } = useConfirm();
+
 	const selectedRows = table.getFilteredSelectedRowModel().rows;
+
+	async function handleClickDelete() {
+		const confirmDelete = await confirm();
+
+		if (confirmDelete) {
+			onDelete(selectedRows);
+			table.resetRowSelection();
+		}
+	}
 
 	return (
 		<div>
+			<ConfirmDialog
+				title="Are you sure?"
+				description="This action cannot be undone. This will permanently delete the selected rows and associated data."
+				open={isOpen}
+				onClickConfirm={handleConfirm}
+				onClickCancel={handleCancel}
+			/>
 			<div className="flex items-center justify-between py-4">
 				<Input
 					placeholder={`Filter by ${filterKey}...`}
@@ -75,10 +96,7 @@ export function DataTable<TData, TValue>({
 						variant="outline"
 						className="text-xs"
 						disabled={disabled}
-						onClick={() => {
-							onDelete(selectedRows);
-							table.resetRowSelection();
-						}}
+						onClick={handleClickDelete}
 					>
 						<Trash className="size-4 mr-2" /> Delete {selectedRows.length} row
 						{selectedRows.length > 1 ? 's' : ''}
