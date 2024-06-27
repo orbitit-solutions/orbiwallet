@@ -1,7 +1,14 @@
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from '@/components/ui/form';
 
 import { insertAccountSchema } from '@/db/schema';
 import { Input } from '@/components/ui/input';
@@ -62,6 +69,7 @@ function CreateAccountForm({ onSuccess }: CreateAccountFormProps) {
 									placeholder="e.g. Cash, Checking, Credit Card"
 								/>
 							</FormControl>
+							<FormMessage />
 						</FormItem>
 					)}
 				/>

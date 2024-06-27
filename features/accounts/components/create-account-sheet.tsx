@@ -12,6 +12,7 @@ import {
 	SheetTrigger,
 } from '@/components/ui/sheet';
 import CreateAccountForm from './create-account-form';
+import { Plus } from 'lucide-react';
 
 function CreateAccountSheet() {
 	const [isOpen, setOpen] = useToggle(false);
@@ -19,7 +20,9 @@ function CreateAccountSheet() {
 	return (
 		<Sheet open={isOpen} onOpenChange={setOpen}>
 			<SheetTrigger asChild>
-				<Button>Create account</Button>
+				<Button>
+					<Plus className="mr-1 size-4" aria-hidden="true" /> New Account
+				</Button>
 			</SheetTrigger>
 			<SheetContent className="space-y-4">
 				<SheetHeader>
