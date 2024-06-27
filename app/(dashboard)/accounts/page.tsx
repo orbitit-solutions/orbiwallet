@@ -9,7 +9,7 @@ import LoadingSpinner from '@/components/ui/loading-spinner';
 import { useBulkDelete } from '@/features/accounts/hooks/api/use-bulk-delete';
 
 function AccountsPage() {
-	const { data: accounts, isLoading: isAccountsLoading } = useAccounts();
+	const { data: accounts, isLoading: isAccountsLoading, isError, error } = useAccounts();
 	const { isPending: isDeleting, mutate: bulkDeleteMutate } = useBulkDelete();
 
 	return (
@@ -22,6 +22,10 @@ function AccountsPage() {
 				<div className="flex items-center justify-center min-h-[300px]">
 					<LoadingSpinner />
 				</div>
+			) : isError ? (
+				<p className="text-center min-h-[65vh] flex items-center justify-center text-red-600 font-semibold">
+					{error.message}
+				</p>
 			) : accounts && accounts.length > 0 ? (
 				<DataTable
 					columns={columns}
@@ -34,7 +38,10 @@ function AccountsPage() {
 					disabled={isDeleting}
 				/>
 			) : (
-				<p>There are no accounts to show.</p>
+				<p className="text-center min-h-[65vh] flex items-center justify-center">
+					You do not have any accounts. Create an account to start tracking your
+					transactions.
+				</p>
 			)}
 		</RestrictiveContainer>
 	);
