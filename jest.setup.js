@@ -1,4 +1,7 @@
 import '@testing-library/jest-dom';
+import { cleanup } from '@testing-library/react';
+
+import { mockServer } from './test/mocks/server';
 
 // Mocking window.matchMedia() since it is not implemented in JSDOM
 Object.defineProperty(window, 'matchMedia', {
@@ -14,3 +17,12 @@ Object.defineProperty(window, 'matchMedia', {
 		dispatchEvent: jest.fn(),
 	})),
 });
+
+beforeAll(() => mockServer.listen());
+
+afterEach(() => {
+	cleanup();
+	mockServer.resetHandlers();
+});
+
+afterAll(() => mockServer.close());
