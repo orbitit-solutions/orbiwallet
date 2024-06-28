@@ -1,9 +1,8 @@
-'use client';
+import { UserButton } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 
-import { UserButton, useUser } from '@clerk/nextjs';
-
-function UserInfo() {
-	const { user } = useUser();
+async function UserInfo() {
+	const user = await currentUser();
 	return (
 		<div className="flex items-center gap-x-3">
 			<UserButton
