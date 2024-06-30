@@ -18,6 +18,7 @@ import {
 import {
 	Table,
 	TableBody,
+	TableCaption,
 	TableCell,
 	TableHead,
 	TableHeader,
@@ -35,6 +36,7 @@ interface DataTableProps<TData, TValue> {
 	filterKey: string;
 	onDelete: (rows: Row<TData>[]) => void;
 	disabled?: boolean;
+	tableCaption: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -43,6 +45,7 @@ export function DataTable<TData, TValue>({
 	filterKey,
 	onDelete,
 	disabled,
+	tableCaption,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -105,6 +108,7 @@ export function DataTable<TData, TValue>({
 			</div>
 			<div className="rounded-md border">
 				<Table>
+					<TableCaption className="sr-only">{tableCaption}</TableCaption>
 					<TableHeader>
 						{table.getHeaderGroups().map(headerGroup => (
 							<TableRow key={headerGroup.id}>

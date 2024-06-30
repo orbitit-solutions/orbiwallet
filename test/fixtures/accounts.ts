@@ -1,8 +1,6 @@
-import { InferResponseType } from 'hono';
+import { AccountsGetResponseType } from '@/types/accounts';
 
-import { client } from '@/lib/hono';
-
-export const accounts: InferResponseType<typeof client.api.accounts.$get>['data'] = [
+export const accounts: AccountsGetResponseType['data'] = [
 	{ id: 1, name: 'Test 1' },
 	{ id: 2, name: 'Test 2' },
 ];

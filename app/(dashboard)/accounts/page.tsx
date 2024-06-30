@@ -36,6 +36,7 @@ function AccountsPage() {
 						bulkDeleteMutate({ ids });
 					}}
 					disabled={isDeleting}
+					tableCaption="A list of your accounts"
 				/>
 			) : (
 				<p className="text-center min-h-[65vh] flex items-center justify-center">
