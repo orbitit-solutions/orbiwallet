@@ -1,13 +1,27 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DefaultBodyType, HttpResponse, PathParams, http } from 'msw';
-import { InferResponseType } from 'hono';
 
 import AccountsPage from '@/app/(dashboard)/accounts/page';
 import { customRender } from '@/test/utils';
 import { accounts } from '@/test/fixtures/accounts';
 import { mockServer } from '@/test/mocks/server';
-import { client } from '@/lib/hono';
+import { Toaster } from '@/components/ui/sonner';
+import { ACCOUNTS_BASE_URL } from '@/utils/constants';
+import { AccountsGetResponseType } from '@/types/accounts';
+
+const accountsTableCaption = /a list of your accounts/i;
+const confirmDialogTitle = 'Are you sure?';
+
+function getAccountRows() {
+	const accountsTable = screen.getByRole('table', {
+		name: accountsTableCaption,
+	});
+
+	const accountRows = within(accountsTable).getAllByRole('row').slice(1);
+
+	return accountRows;
+}
 
 describe('Accounts', () => {
 	test('renders page title', () => {
@@ -36,7 +50,12 @@ describe('Accounts', () => {
 
 	test('renders an accounts table with column headers in the correct order', async () => {
 		customRender(<AccountsPage />);
-		const columnHeaders = await screen.findAllByRole('columnheader');
+
+		const accountsTable = await screen.findByRole('table', {
+			name: accountsTableCaption,
+		});
+
+		const columnHeaders = within(accountsTable).getAllByRole('columnheader');
 
 		expect(columnHeaders[0]).toHaveAccessibleName(/select all/i);
 		expect(columnHeaders[1]).toHaveTextContent('ID');
@@ -45,13 +64,12 @@ describe('Accounts', () => {
 
 	test('renders no-accounts text when there are no accounts', async () => {
 		mockServer.use(
-			http.get<
-				PathParams,
-				DefaultBodyType,
-				InferResponseType<typeof client.api.accounts.$get>
-			>(`${process.env.NEXT_PUBLIC_APP_URL}/api/accounts`, () => {
-				return HttpResponse.json({ data: [] });
-			}),
+			http.get<PathParams, DefaultBodyType, AccountsGetResponseType>(
+				ACCOUNTS_BASE_URL,
+				() => {
+					return HttpResponse.json({ data: [] });
+				},
+			),
 		);
 
 		customRender(<AccountsPage />);
@@ -65,7 +83,7 @@ describe('Accounts', () => {
 
 	test('renders an error message when a network error occurs', async () => {
 		mockServer.use(
-			http.get(`${process.env.NEXT_PUBLIC_APP_URL}/api/accounts`, () => {
+			http.get(ACCOUNTS_BASE_URL, () => {
 				return HttpResponse.error();
 			}),
 		);
@@ -81,13 +99,97 @@ describe('Accounts', () => {
 
 	test('renders an accounts table with account details in the correct order', async () => {
 		customRender(<AccountsPage />);
-		const accountRows = (await screen.findAllByRole('row')).slice(1);
+
+		const accountsTable = await screen.findByRole('table', {
+			name: accountsTableCaption,
+		});
+
+		const accountRows = within(accountsTable).getAllByRole('row').slice(1);
 
 		accountRows.forEach((row, i) => {
 			const cells = within(row).getAllByRole('cell');
 			expect(cells[0]).toHaveAccessibleName(/select row/i);
 			expect(cells[1]).toHaveTextContent(accounts[i].id.toString());
 			expect(cells[2]).toHaveTextContent(accounts[i].name);
+		});
+	});
+
+	describe('Account Creation', () => {
+		test('creates an account and shows a success message', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<AccountsPage />
+				</>,
+			);
+
+			const newAccount = { id: accounts.length + 1, name: 'My Test Account' };
+
+			mockServer.use(
+				http.get<PathParams, DefaultBodyType, AccountsGetResponseType>(
+					ACCOUNTS_BASE_URL,
+					() => {
+						return HttpResponse.json({
+							data: [...accounts, newAccount],
+						});
+					},
+				),
+			);
+
+			const user = userEvent.setup();
+			const newAccountButton = screen.getByRole('button', { name: /new account/i });
+
+			await user.click(newAccountButton);
+
+			const createAccountForm = screen.getByRole('form', { name: /create account/i });
+			const nameInput = within(createAccountForm).getByLabelText('Name');
+			const createAccountButton = within(createAccountForm).getByRole('button', {
+				name: 'Create account',
+			});
+
+			await user.type(nameInput, newAccount.name);
+			await user.click(createAccountButton);
+
+			const successMessage = await screen.findByText('Account created successfully!');
+			const newAccountNameCell = await screen.findByRole('cell', {
+				name: newAccount.name,
+			});
+
+			expect(successMessage).toBeVisible();
+			expect(newAccountNameCell).toBeVisible();
+		});
+
+		test('shows an error message when an account cannot be created', async () => {
+			mockServer.use(
+				http.post(ACCOUNTS_BASE_URL, () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			customRender(
+				<>
+					<Toaster />
+					<AccountsPage />
+				</>,
+			);
+
+			const user = userEvent.setup();
+			const newAccountButton = screen.getByRole('button', { name: /new account/i });
+
+			await user.click(newAccountButton);
+
+			const createAccountForm = screen.getByRole('form', { name: /create account/i });
+			const nameInput = within(createAccountForm).getByLabelText('Name');
+			const createAccountButton = within(createAccountForm).getByRole('button', {
+				name: 'Create account',
+			});
+
+			await user.type(nameInput, 'My Test Account');
+			await user.click(createAccountButton);
+
+			const errorMessage = await screen.findByText('Failed to create an account.');
+
+			expect(errorMessage).toBeVisible();
 		});
 	});
 
@@ -115,7 +217,8 @@ describe('Accounts', () => {
 
 			await user.click(nameSortButton);
 
-			const accountRows = screen.getAllByRole('row').slice(1);
+			const accountRows = getAccountRows();
+
 			const firstRowCells = within(accountRows[0]).getAllByRole('cell');
 			const secondRowCells = within(accountRows[1]).getAllByRole('cell');
 
@@ -130,7 +233,7 @@ describe('Accounts', () => {
 			await user.click(nameSortButton);
 			await user.click(nameSortButton);
 
-			const accountRows = screen.getAllByRole('row').slice(1);
+			const accountRows = getAccountRows();
 			const firstRowCells = within(accountRows[0]).getAllByRole('cell');
 			const secondRowCells = within(accountRows[1]).getAllByRole('cell');
 
@@ -144,7 +247,7 @@ describe('Accounts', () => {
 
 			await user.click(idSortButton);
 
-			const accountRows = screen.getAllByRole('row').slice(1);
+			const accountRows = getAccountRows();
 			const firstRowCells = within(accountRows[0]).getAllByRole('cell');
 			const secondRowCells = within(accountRows[1]).getAllByRole('cell');
 
@@ -159,7 +262,7 @@ describe('Accounts', () => {
 			await user.click(idSortButton);
 			await user.click(idSortButton);
 
-			const accountRows = screen.getAllByRole('row').slice(1);
+			const accountRows = getAccountRows();
 			const firstRowCells = within(accountRows[0]).getAllByRole('cell');
 			const secondRowCells = within(accountRows[1]).getAllByRole('cell');
 
@@ -169,7 +272,12 @@ describe('Accounts', () => {
 
 		test('can select all rows', async () => {
 			const user = userEvent.setup();
-			const selectAllCheckbox = await screen.findByRole('checkbox', {
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const selectAllCheckbox = within(accountsTable).getByRole('checkbox', {
 				name: /select all/i,
 			});
 
@@ -192,7 +300,12 @@ describe('Accounts', () => {
 
 		test('shows delete button when accounts are selected and clicking it opens a confirmation dialog', async () => {
 			const user = userEvent.setup();
-			const selectAllCheckbox = await screen.findByRole('checkbox', {
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const selectAllCheckbox = within(accountsTable).getByRole('checkbox', {
 				name: /select all/i,
 			});
 
@@ -205,7 +318,7 @@ describe('Accounts', () => {
 			await user.click(deleteButton);
 
 			const confirmDialog = screen.getByRole('alertdialog', {
-				name: 'Are you sure?',
+				name: confirmDialogTitle,
 			});
 
 			const confirmButton = within(confirmDialog).getByRole('button', {
@@ -220,7 +333,12 @@ describe('Accounts', () => {
 
 		test('clicking cancel button closes the confirmation dialog', async () => {
 			const user = userEvent.setup();
-			const selectCheckboxes = await screen.findAllByRole('checkbox');
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const selectCheckboxes = within(accountsTable).getAllByRole('checkbox');
 
 			await user.click(selectCheckboxes[1]);
 
@@ -234,9 +352,116 @@ describe('Accounts', () => {
 
 			await user.click(cancelButton);
 
-			const confirmDialog = screen.queryByRole('alertdialog', { name: 'Are you sure?' });
+			const confirmDialog = screen.queryByRole('alertdialog', {
+				name: confirmDialogTitle,
+			});
 
 			expect(confirmDialog).not.toBeInTheDocument();
+		});
+	});
+
+	describe('Account Deletion', () => {
+		test('deletes an account and shows a success message', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<AccountsPage />
+				</>,
+			);
+
+			const deletedAccountId = accounts[0].id;
+
+			mockServer.use(
+				http.get<PathParams, DefaultBodyType, AccountsGetResponseType>(
+					ACCOUNTS_BASE_URL,
+					() => {
+						return HttpResponse.json({
+							data: accounts.filter(account => account.id !== deletedAccountId),
+						});
+					},
+				),
+			);
+
+			const user = userEvent.setup();
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const selectCheckboxes = within(accountsTable).getAllByRole('checkbox');
+
+			// Select checkbox for the first account
+			await user.click(selectCheckboxes[1]);
+
+			const deleteButton = screen.getByRole('button', {
+				name: `Delete 1 row`,
+			});
+
+			await user.click(deleteButton);
+
+			const confirmDialog = screen.getByRole('alertdialog', {
+				name: confirmDialogTitle,
+			});
+
+			const confirmButton = within(confirmDialog).getByRole('button', {
+				name: 'Confirm',
+			});
+
+			await user.click(confirmButton);
+
+			const successMessage = await screen.findByText('Account deleted successfully!');
+
+			const deletedAccountNameCell = screen.queryByRole('cell', {
+				name: accounts[0].name,
+			});
+
+			expect(successMessage).toBeVisible();
+			expect(deletedAccountNameCell).not.toBeInTheDocument();
+		});
+
+		test('shows an error message when an account cannot be deleted', async () => {
+			mockServer.use(
+				http.post(`${ACCOUNTS_BASE_URL}/bulk-delete`, () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			customRender(
+				<>
+					<Toaster />
+					<AccountsPage />
+				</>,
+			);
+
+			const user = userEvent.setup();
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const selectCheckboxes = within(accountsTable).getAllByRole('checkbox');
+
+			await user.click(selectCheckboxes[1]);
+
+			const deleteButton = screen.getByRole('button', {
+				name: `Delete 1 row`,
+			});
+
+			await user.click(deleteButton);
+
+			const confirmDialog = screen.getByRole('alertdialog', {
+				name: confirmDialogTitle,
+			});
+
+			const confirmButton = within(confirmDialog).getByRole('button', {
+				name: 'Confirm',
+			});
+
+			await user.click(confirmButton);
+
+			const errorMessage = await screen.findByText('Failed to delete account.');
+
+			expect(errorMessage).toBeVisible();
 		});
 	});
 });

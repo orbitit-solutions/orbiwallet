@@ -1,13 +1,12 @@
 'use client';
 
-import { InferResponseType } from 'hono';
 import { ColumnDef } from '@tanstack/react-table';
 
-import { client } from '@/lib/hono';
 import { Checkbox } from '@/components/ui/checkbox';
 import SortableColumnHeader from '@/components/ui/sortable-column-header';
+import { AccountsGetResponseType } from '@/types/accounts';
 
-export type Account = InferResponseType<typeof client.api.accounts.$get>['data'][0];
+export type Account = AccountsGetResponseType['data'][0];
 
 export const columns: ColumnDef<Account>[] = [
 	{
