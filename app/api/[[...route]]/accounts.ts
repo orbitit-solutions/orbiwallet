@@ -22,6 +22,36 @@ const app = new Hono()
 			.where(eq(accounts.userId, auth.userId));
 		return ctx.json({ data });
 	})
+	.get(
+		'/:id',
+		clerkMiddleware(),
+		// Route params are of type string, so we have to convert it to a number
+		zValidator('param', z.object({ id: z.coerce.number().int().positive().optional() })),
+		async ctx => {
+			const auth = getAuth(ctx);
+
+			if (!auth?.userId) {
+				throw new HTTPException(401, { res: ctx.json({ error: 'Unauthorized' }, 401) });
+			}
+
+			const { id } = ctx.req.valid('param');
+
+			if (!id) {
+				return ctx.json({ error: 'ID missing' }, 400);
+			}
+
+			const [account] = await db
+				.select({ id: accounts.id, name: accounts.name })
+				.from(accounts)
+				.where(and(eq(accounts.userId, auth.userId), eq(accounts.id, id)));
+
+			if (!account) {
+				return ctx.json({ error: 'Account not found' }, 404);
+			}
+
+			return ctx.json({ data: account });
+		},
+	)
 	.post(
 		'/',
 		clerkMiddleware(),
@@ -62,6 +92,39 @@ const app = new Hono()
 				.returning({ id: accounts.id });
 
 			return ctx.json({ data });
+		},
+	)
+	.patch(
+		'/:id',
+		clerkMiddleware(),
+		zValidator('param', z.object({ id: z.coerce.number().int().positive().optional() })),
+		zValidator('json', insertAccountSchema.pick({ name: true })),
+		async ctx => {
+			const auth = getAuth(ctx);
+
+			if (!auth?.userId) {
+				throw new HTTPException(401, { res: ctx.json({ error: 'Unauthorized' }, 401) });
+			}
+
+			const { id } = ctx.req.valid('param');
+
+			if (!id) {
+				return ctx.json({ error: 'ID missing' }, 400);
+			}
+
+			const values = ctx.req.valid('json');
+
+			const [updatedAccount] = await db
+				.update(accounts)
+				.set(values)
+				.where(and(eq(accounts.userId, auth.userId), eq(accounts.id, id)))
+				.returning({ id: accounts.id, name: accounts.name });
+
+			if (!updatedAccount) {
+				return ctx.json({ error: 'Account not found' }, 404);
+			}
+
+			return ctx.json({ data: updatedAccount });
 		},
 	);
 

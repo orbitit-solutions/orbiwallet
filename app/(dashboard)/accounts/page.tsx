@@ -7,13 +7,22 @@ import { columns } from './columns';
 import { useAccounts } from '@/features/accounts/hooks/api/use-accounts';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import { useBulkDelete } from '@/features/accounts/hooks/api/use-bulk-delete';
+import EditAccountSheet from '@/features/accounts/components/edit-account-sheet';
+import { useSelectedId } from '@/hooks/use-selected-id';
 
 function AccountsPage() {
 	const { data: accounts, isLoading: isAccountsLoading, isError, error } = useAccounts();
 	const { isPending: isDeleting, mutate: bulkDeleteMutate } = useBulkDelete();
 
+	const { selectedId, isOpen, handleClose, handleOpen } = useSelectedId();
+
 	return (
 		<RestrictiveContainer>
+			<EditAccountSheet
+				accountId={selectedId}
+				isOpen={isOpen}
+				handleClose={handleClose}
+			/>
 			<div className="flex flex-col gap-2 xs:flex-row xs:items-center xs:justify-between">
 				<h1 className=" font-bold text-2xl sm:text-3xl">Accounts</h1>
 				<CreateAccountSheet />
@@ -37,6 +46,7 @@ function AccountsPage() {
 					}}
 					disabled={isDeleting}
 					tableCaption="A list of your accounts"
+					onClickEdit={handleOpen}
 				/>
 			) : (
 				<p className="text-center min-h-[65vh] flex items-center justify-center">

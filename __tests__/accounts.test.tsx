@@ -12,6 +12,8 @@ import { AccountsGetResponseType } from '@/types/accounts';
 
 const accountsTableCaption = /a list of your accounts/i;
 const confirmDialogTitle = 'Are you sure?';
+const actionsButtonName = /open actions/i;
+const editAccountDialogTitle = 'Edit Account';
 
 function getAccountRows() {
 	const accountsTable = screen.getByRole('table', {
@@ -60,6 +62,7 @@ describe('Accounts', () => {
 		expect(columnHeaders[0]).toHaveAccessibleName(/select all/i);
 		expect(columnHeaders[1]).toHaveTextContent('ID');
 		expect(columnHeaders[2]).toHaveTextContent('Name');
+		expect(columnHeaders[3]).toHaveAccessibleName(/actions/i);
 	});
 
 	test('renders no-accounts text when there are no accounts', async () => {
@@ -111,6 +114,9 @@ describe('Accounts', () => {
 			expect(cells[0]).toHaveAccessibleName(/select row/i);
 			expect(cells[1]).toHaveTextContent(accounts[i].id.toString());
 			expect(cells[2]).toHaveTextContent(accounts[i].name);
+			expect(
+				within(cells[3]).getByRole('button', { name: actionsButtonName }),
+			).toBeInTheDocument();
 		});
 	});
 
@@ -357,6 +363,173 @@ describe('Accounts', () => {
 			});
 
 			expect(confirmDialog).not.toBeInTheDocument();
+		});
+	});
+
+	describe('Account Update', () => {
+		test('updates an account and shows a success message', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<AccountsPage />
+				</>,
+			);
+
+			// Updating the first account
+			const updatedAccountName = `${accounts[0].name} updated`;
+
+			mockServer.use(
+				http.get<PathParams, DefaultBodyType, AccountsGetResponseType>(
+					ACCOUNTS_BASE_URL,
+					() => {
+						const updatedAccounts = accounts.map(account => {
+							if (account.id === accounts[0].id) {
+								return { ...account, name: updatedAccountName };
+							}
+
+							return account;
+						});
+						return HttpResponse.json({ data: updatedAccounts });
+					},
+				),
+			);
+
+			const user = userEvent.setup();
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const firstRowActionsButton = within(accountsTable).getAllByRole('button', {
+				name: actionsButtonName,
+			})[0];
+
+			await user.click(firstRowActionsButton);
+
+			const actionsMenu = screen.getByRole('menu', { name: actionsButtonName });
+			const editMenuItem = within(actionsMenu).getByRole('menuitem', { name: 'Edit' });
+
+			await user.click(editMenuItem);
+
+			const editAccountDialog = screen.getByRole('dialog', {
+				name: editAccountDialogTitle,
+			});
+			const editAccountForm = within(editAccountDialog).getByRole('form', {
+				name: editAccountDialogTitle,
+			});
+			const nameInput = within(editAccountForm).getByLabelText('Name');
+			const editAccountButton = within(editAccountForm).getByRole('button', {
+				name: 'Edit account',
+			});
+
+			await user.clear(nameInput);
+			await user.type(nameInput, updatedAccountName);
+			await user.click(editAccountButton);
+
+			const successMessage = await screen.findByText('Account updated successfully!');
+			const updatedAccountNameCell = await screen.findByRole('cell', {
+				name: updatedAccountName,
+			});
+			const accountNameCellBeforeUpdate = screen.queryByRole('cell', {
+				name: accounts[0].name,
+			});
+
+			expect(successMessage).toBeVisible();
+			expect(updatedAccountNameCell).toBeVisible();
+			expect(accountNameCellBeforeUpdate).not.toBeInTheDocument();
+		});
+
+		test('shows an error message when account information cannot be fetched', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<AccountsPage />
+				</>,
+			);
+
+			mockServer.use(
+				http.get(`${ACCOUNTS_BASE_URL}/:id`, () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			const user = userEvent.setup();
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const firstRowActionsButton = within(accountsTable).getAllByRole('button', {
+				name: actionsButtonName,
+			})[0];
+
+			await user.click(firstRowActionsButton);
+
+			const actionsMenu = screen.getByRole('menu', { name: actionsButtonName });
+			const editMenuItem = within(actionsMenu).getByRole('menuitem', { name: 'Edit' });
+
+			await user.click(editMenuItem);
+
+			const editAccountDialog = screen.getByRole('dialog', {
+				name: editAccountDialogTitle,
+			});
+			const editAccountForm = within(editAccountDialog).queryByRole('form', {
+				name: editAccountDialogTitle,
+			});
+			const errorMessage = within(editAccountDialog).getByText(
+				'Failed to fetch account. Please try again later.',
+			);
+
+			expect(errorMessage).toBeVisible();
+			expect(editAccountForm).not.toBeInTheDocument();
+		});
+
+		test('shows an error message when an account cannot be updated', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<AccountsPage />
+				</>,
+			);
+
+			mockServer.use(
+				http.patch(`${ACCOUNTS_BASE_URL}/:id`, () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			const user = userEvent.setup();
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const firstRowActionsButton = within(accountsTable).getAllByRole('button', {
+				name: actionsButtonName,
+			})[0];
+
+			await user.click(firstRowActionsButton);
+
+			const actionsMenu = screen.getByRole('menu', { name: actionsButtonName });
+			const editMenuItem = within(actionsMenu).getByRole('menuitem', { name: 'Edit' });
+
+			await user.click(editMenuItem);
+
+			const editAccountDialog = screen.getByRole('dialog', {
+				name: editAccountDialogTitle,
+			});
+			const editAccountForm = within(editAccountDialog).getByRole('form', {
+				name: editAccountDialogTitle,
+			});
+			const editAccountButton = within(editAccountForm).getByRole('button', {
+				name: 'Edit account',
+			});
+
+			await user.click(editAccountButton);
+
+			const errorMessage = await screen.findByText('Failed to update account.');
+
+			expect(errorMessage).toBeVisible();
 		});
 	});
 

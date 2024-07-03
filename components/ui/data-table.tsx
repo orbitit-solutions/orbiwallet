@@ -37,6 +37,7 @@ interface DataTableProps<TData, TValue> {
 	onDelete: (rows: Row<TData>[]) => void;
 	disabled?: boolean;
 	tableCaption: string;
+	onClickEdit?: (id: number) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -46,6 +47,7 @@ export function DataTable<TData, TValue>({
 	onDelete,
 	disabled,
 	tableCaption,
+	onClickEdit,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -54,6 +56,9 @@ export function DataTable<TData, TValue>({
 	const table = useReactTable({
 		data,
 		columns,
+		meta: {
+			...(onClickEdit && { onClickEdit }),
+		},
 		getCoreRowModel: getCoreRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		onSortingChange: setSorting,
