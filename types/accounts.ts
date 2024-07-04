@@ -29,3 +29,10 @@ export type AccountEditRequestType = InferRequestType<
 export type AccountEditResponseType = InferResponseType<
 	(typeof client.api.accounts)[':id']['$patch']
 >;
+
+export type AccountDeleteResponseType = InferResponseType<
+	(typeof client.api.accounts)[':id']['$delete']
+>;
+export type AccountDeleteRequestType = InferRequestType<
+	(typeof client.api.accounts)[':id']['$delete']
+>;

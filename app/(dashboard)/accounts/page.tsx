@@ -9,10 +9,12 @@ import LoadingSpinner from '@/components/ui/loading-spinner';
 import { useBulkDelete } from '@/features/accounts/hooks/api/use-bulk-delete';
 import EditAccountSheet from '@/features/accounts/components/edit-account-sheet';
 import { useSelectedId } from '@/hooks/use-selected-id';
+import { useDeleteAccount } from '@/features/accounts/hooks/api/use-delete-account';
 
 function AccountsPage() {
 	const { data: accounts, isLoading: isAccountsLoading, isError, error } = useAccounts();
-	const { isPending: isDeleting, mutate: bulkDeleteMutate } = useBulkDelete();
+	const { isPending: isBulkDeleting, mutate: bulkDeleteMutate } = useBulkDelete();
+	const { mutate: deleteMutate } = useDeleteAccount();
 
 	const { selectedId, isOpen, handleClose, handleOpen } = useSelectedId();
 
@@ -40,11 +42,14 @@ function AccountsPage() {
 					columns={columns}
 					data={accounts}
 					filterKey="name"
-					onDelete={rows => {
+					onBulkDelete={rows => {
 						const ids = rows.map(row => row.original.id);
 						bulkDeleteMutate({ ids });
 					}}
-					disabled={isDeleting}
+					onDelete={(id: number) => {
+						deleteMutate({ id: id.toString() });
+					}}
+					disabled={isBulkDeleting}
 					tableCaption="A list of your accounts"
 					onClickEdit={handleOpen}
 				/>

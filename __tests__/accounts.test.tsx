@@ -14,6 +14,7 @@ const accountsTableCaption = /a list of your accounts/i;
 const confirmDialogTitle = 'Are you sure?';
 const actionsButtonName = /open actions/i;
 const editAccountDialogTitle = 'Edit Account';
+const confirmButtonText = 'Confirm';
 
 function getAccountRows() {
 	const accountsTable = screen.getByRole('table', {
@@ -328,7 +329,7 @@ describe('Accounts', () => {
 			});
 
 			const confirmButton = within(confirmDialog).getByRole('button', {
-				name: 'Confirm',
+				name: confirmButtonText,
 			});
 			const cancelButton = within(confirmDialog).getByRole('button', { name: 'Cancel' });
 
@@ -542,6 +543,154 @@ describe('Accounts', () => {
 				</>,
 			);
 
+			// Deleting the first account
+			const deletedAccountId = accounts[0].id;
+
+			mockServer.use(
+				http.get<PathParams, DefaultBodyType, AccountsGetResponseType>(
+					ACCOUNTS_BASE_URL,
+					() => {
+						return HttpResponse.json({
+							data: accounts.filter(account => account.id !== deletedAccountId),
+						});
+					},
+				),
+			);
+
+			const user = userEvent.setup();
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const firstRowActionsButton = within(accountsTable).getAllByRole('button', {
+				name: actionsButtonName,
+			})[0];
+
+			await user.click(firstRowActionsButton);
+
+			const actionsMenu = screen.getByRole('menu', { name: actionsButtonName });
+			const deleteMenuItem = within(actionsMenu).getByRole('menuitem', {
+				name: 'Delete',
+			});
+
+			await user.click(deleteMenuItem);
+
+			const confirmDialog = screen.getByRole('alertdialog', { name: confirmDialogTitle });
+			const confirmButton = within(confirmDialog).getByRole('button', {
+				name: confirmButtonText,
+			});
+
+			await user.click(confirmButton);
+
+			const successMessage = await screen.findByText('Account deleted successfully!');
+			const deletedAccountNameCell = screen.queryByRole('cell', {
+				name: accounts[0].name,
+			});
+
+			expect(successMessage).toBeVisible();
+			expect(deletedAccountNameCell).not.toBeInTheDocument();
+		});
+		test('shows an error message when an account cannot be deleted due to network error', async () => {
+			mockServer.use(
+				http.delete(`${ACCOUNTS_BASE_URL}/:id`, () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			customRender(
+				<>
+					<Toaster />
+					<AccountsPage />
+				</>,
+			);
+
+			const user = userEvent.setup();
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const firstRowActionsButton = within(accountsTable).getAllByRole('button', {
+				name: actionsButtonName,
+			})[0];
+
+			await user.click(firstRowActionsButton);
+
+			const actionsMenu = screen.getByRole('menu', { name: actionsButtonName });
+			const deleteMenuItem = within(actionsMenu).getByRole('menuitem', {
+				name: 'Delete',
+			});
+
+			await user.click(deleteMenuItem);
+
+			const confirmDialog = screen.getByRole('alertdialog', { name: confirmDialogTitle });
+			const confirmButton = within(confirmDialog).getByRole('button', {
+				name: confirmButtonText,
+			});
+
+			await user.click(confirmButton);
+
+			const errorMessage = await screen.findByText('Failed to delete account.');
+
+			expect(errorMessage).toBeVisible();
+		});
+
+		test('shows an error message when an account cannot be deleted due to bad request ', async () => {
+			mockServer.use(
+				http.delete(`${ACCOUNTS_BASE_URL}/:id`, () => {
+					return HttpResponse.json({ error: 'Account not found' }, { status: 404 });
+				}),
+			);
+
+			customRender(
+				<>
+					<Toaster />
+					<AccountsPage />
+				</>,
+			);
+
+			const user = userEvent.setup();
+
+			const accountsTable = await screen.findByRole('table', {
+				name: accountsTableCaption,
+			});
+
+			const firstRowActionsButton = within(accountsTable).getAllByRole('button', {
+				name: actionsButtonName,
+			})[0];
+
+			await user.click(firstRowActionsButton);
+
+			const actionsMenu = screen.getByRole('menu', { name: actionsButtonName });
+			const deleteMenuItem = within(actionsMenu).getByRole('menuitem', {
+				name: 'Delete',
+			});
+
+			await user.click(deleteMenuItem);
+
+			const confirmDialog = screen.getByRole('alertdialog', { name: confirmDialogTitle });
+			const confirmButton = within(confirmDialog).getByRole('button', {
+				name: confirmButtonText,
+			});
+
+			await user.click(confirmButton);
+
+			const errorMessage = await screen.findByText('Failed to delete account.');
+
+			expect(errorMessage).toBeVisible();
+		});
+	});
+
+	describe('Account Bulk Deletion', () => {
+		test('deletes an account and shows a success message', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<AccountsPage />
+				</>,
+			);
+
 			const deletedAccountId = accounts[0].id;
 
 			mockServer.use(
@@ -577,7 +726,7 @@ describe('Accounts', () => {
 			});
 
 			const confirmButton = within(confirmDialog).getByRole('button', {
-				name: 'Confirm',
+				name: confirmButtonText,
 			});
 
 			await user.click(confirmButton);
@@ -627,7 +776,7 @@ describe('Accounts', () => {
 			});
 
 			const confirmButton = within(confirmDialog).getByRole('button', {
-				name: 'Confirm',
+				name: confirmButtonText,
 			});
 
 			await user.click(confirmButton);

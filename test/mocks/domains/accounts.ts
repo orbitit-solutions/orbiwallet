@@ -7,6 +7,8 @@ import {
 	AccountBulkDeleteResponseType,
 	AccountCreateRequestType,
 	AccountCreateResponseType,
+	AccountDeleteRequestType,
+	AccountDeleteResponseType,
 	AccountEditRequestType,
 	AccountEditResponseType,
 	AccountGetResponseType,
@@ -57,6 +59,19 @@ export const accountHandlers = [
 		const body = await request.json();
 		return HttpResponse.json({ data: body.ids.map(id => ({ id })) });
 	}),
+	http.delete<{ id: string }, DefaultBodyType, AccountDeleteResponseType>(
+		`${ACCOUNTS_BASE_URL}/:id`,
+		async ({ params }) => {
+			const id = Number.parseFloat(params.id);
+			const account = accounts.find(account => account.id === id);
+
+			if (!account) {
+				return HttpResponse.json({ error: 'Account not found' }, { status: 404 });
+			}
+
+			return HttpResponse.json({ data: { id: account.id } });
+		},
+	),
 	http.patch<{ id: string }, AccountEditRequestType['json'], AccountEditResponseType>(
 		`${ACCOUNTS_BASE_URL}/:id`,
 		async ({ request, params }) => {
