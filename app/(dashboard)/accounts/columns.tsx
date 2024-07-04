@@ -49,6 +49,7 @@ export const columns: ColumnDef<Account>[] = [
 				onClickEdit={() => {
 					table.options.meta?.onClickEdit?.(row.original.id);
 				}}
+				onClickDelete={() => table.options.meta?.onClickDelete(row.original.id)}
 			/>
 		),
 	},

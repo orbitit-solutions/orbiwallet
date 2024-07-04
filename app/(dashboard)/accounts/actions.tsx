@@ -1,6 +1,6 @@
 'use client';
 
-import { Edit, MoreHorizontal } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -12,10 +12,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 interface ActionsProps {
-	onClickEdit: () => void;
+	onClickEdit?: () => void;
+	onClickDelete: () => void;
 }
 
-function Actions({ onClickEdit }: ActionsProps) {
+function Actions({ onClickEdit, onClickDelete }: ActionsProps) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -26,9 +27,15 @@ function Actions({ onClickEdit }: ActionsProps) {
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
 				<DropdownMenuLabel>Actions</DropdownMenuLabel>
-				<DropdownMenuItem onClick={onClickEdit} disabled={false}>
-					<Edit className="size-4 mr-2" aria-hidden="true" />
-					Edit
+				{onClickEdit && (
+					<DropdownMenuItem onClick={onClickEdit}>
+						<Edit className="size-4 mr-2" aria-hidden="true" />
+						Edit
+					</DropdownMenuItem>
+				)}
+				<DropdownMenuItem onClick={onClickDelete}>
+					<Trash2 className="size-4 mr-2" aria-hidden="true" />
+					Delete
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

@@ -34,7 +34,8 @@ interface DataTableProps<TData, TValue> {
 	columns: ColumnDef<TData, TValue>[];
 	data: TData[];
 	filterKey: string;
-	onDelete: (rows: Row<TData>[]) => void;
+	onBulkDelete: (rows: Row<TData>[]) => void;
+	onDelete: (id: number) => void;
 	disabled?: boolean;
 	tableCaption: string;
 	onClickEdit?: (id: number) => void;
@@ -44,6 +45,7 @@ export function DataTable<TData, TValue>({
 	columns,
 	data,
 	filterKey,
+	onBulkDelete,
 	onDelete,
 	disabled,
 	tableCaption,
@@ -57,6 +59,7 @@ export function DataTable<TData, TValue>({
 		data,
 		columns,
 		meta: {
+			onClickDelete: handleClickDelete,
 			...(onClickEdit && { onClickEdit }),
 		},
 		getCoreRowModel: getCoreRowModel(),
@@ -69,27 +72,51 @@ export function DataTable<TData, TValue>({
 		state: { sorting, columnFilters, rowSelection },
 	});
 
-	const { isOpen, confirm, handleConfirm, handleCancel } = useConfirm();
+	const {
+		isOpen: isBulkDeleteConfirmDialogOpen,
+		confirm: confirmBulkDelete,
+		handleConfirm: handleConfirmBulkDelete,
+		handleCancel: handleCancelBulkDelete,
+	} = useConfirm();
+
+	const {
+		isOpen: isDeleteConfirmDialogOpen,
+		confirm: confirmDelete,
+		handleConfirm: handleConfirmDelete,
+		handleCancel: handleCancelDelete,
+	} = useConfirm();
 
 	const selectedRows = table.getFilteredSelectedRowModel().rows;
 
-	async function handleClickDelete() {
-		const confirmDelete = await confirm();
+	async function handleClickBulkDelete() {
+		const isConfirmed = await confirmBulkDelete();
 
-		if (confirmDelete) {
-			onDelete(selectedRows);
+		if (isConfirmed) {
+			onBulkDelete(selectedRows);
 			table.resetRowSelection();
 		}
+	}
+
+	async function handleClickDelete(id: number) {
+		const isConfirmed = await confirmDelete();
+		if (isConfirmed) onDelete(id);
 	}
 
 	return (
 		<div>
 			<ConfirmDialog
 				title="Are you sure?"
+				description="This action cannot be undone. This will permanently delete the row and associated data."
+				open={isDeleteConfirmDialogOpen}
+				onClickConfirm={handleConfirmDelete}
+				onClickCancel={handleCancelDelete}
+			/>
+			<ConfirmDialog
+				title="Are you sure?"
 				description="This action cannot be undone. This will permanently delete the selected rows and associated data."
-				open={isOpen}
-				onClickConfirm={handleConfirm}
-				onClickCancel={handleCancel}
+				open={isBulkDeleteConfirmDialogOpen}
+				onClickConfirm={handleConfirmBulkDelete}
+				onClickCancel={handleCancelBulkDelete}
 			/>
 			<div className="flex items-center justify-between py-4">
 				<Input
@@ -104,7 +131,7 @@ export function DataTable<TData, TValue>({
 						variant="outline"
 						className="text-xs"
 						disabled={disabled}
-						onClick={handleClickDelete}
+						onClick={handleClickBulkDelete}
 					>
 						<Trash className="size-4 mr-2" /> Delete {selectedRows.length} row
 						{selectedRows.length > 1 ? 's' : ''}

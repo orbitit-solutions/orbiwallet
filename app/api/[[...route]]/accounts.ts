@@ -126,6 +126,35 @@ const app = new Hono()
 
 			return ctx.json({ data: updatedAccount });
 		},
+	)
+	.delete(
+		'/:id',
+		clerkMiddleware(),
+		zValidator('param', z.object({ id: z.coerce.number().int().positive().optional() })),
+		async ctx => {
+			const auth = getAuth(ctx);
+
+			if (!auth?.userId) {
+				throw new HTTPException(401, { res: ctx.json({ error: 'Unauthorized' }, 401) });
+			}
+
+			const { id } = ctx.req.valid('param');
+
+			if (!id) {
+				return ctx.json({ error: 'ID missing' }, 404);
+			}
+
+			const [data] = await db
+				.delete(accounts)
+				.where(and(eq(accounts.userId, auth.userId), eq(accounts.id, id)))
+				.returning({ id: accounts.id });
+
+			if (!data) {
+				return ctx.json({ error: 'Account not found' }, 404);
+			}
+
+			return ctx.json({ data });
+		},
 	);
 
 export default app;
