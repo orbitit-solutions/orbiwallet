@@ -3,14 +3,14 @@ import { AccountEditRequestType, AccountEditResponseType } from '@/types/account
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-export function useEditAccount(id: number | undefined) {
+export function useEditAccount() {
 	const queryClient = useQueryClient();
 
-	return useMutation<AccountEditResponseType, Error, AccountEditRequestType['json']>({
-		mutationFn: async data => {
+	return useMutation<AccountEditResponseType, Error, AccountEditRequestType>({
+		mutationFn: async ({ param, json }) => {
 			const response = await client.api.accounts[':id']['$patch']({
-				param: { id: id?.toString() },
-				json: data,
+				param,
+				json,
 			});
 
 			if (!response.ok) {

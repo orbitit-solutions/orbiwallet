@@ -35,14 +35,17 @@ function EditAccountForm({ accountId, onSuccess, defaultValues }: EditAccountFor
 
 	const formErrors = form.formState.errors;
 
-	const mutation = useEditAccount(accountId);
+	const mutation = useEditAccount();
 
 	function onSubmit(formData: FormData) {
-		mutation.mutate(formData, {
-			onSuccess: () => {
-				onSuccess?.();
+		mutation.mutate(
+			{ param: { id: accountId?.toString() }, json: formData },
+			{
+				onSuccess: () => {
+					onSuccess?.();
+				},
 			},
-		});
+		);
 	}
 
 	return (
