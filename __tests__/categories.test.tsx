@@ -8,6 +8,7 @@ import { customRender } from '@/test/utils';
 import { mockServer } from '@/test/mocks/server';
 import { CategoriesGetResponseType } from '@/types/categories';
 import { CATEGORIES_BASE_URL } from '@/utils/constants';
+import { Toaster } from '@/components/ui/sonner';
 
 const categoriesTableCaption = /a list of your categories/i;
 const confirmDialogTitle = 'Are you sure?';
@@ -65,6 +66,24 @@ describe('Categories', () => {
 		expect(errorMessage).toBeVisible();
 	});
 
+	test('shows create category form when new category button is clicked', async () => {
+		customRender(<CategoriesPage />);
+		const user = userEvent.setup();
+		const newCategoryButton = screen.getByRole('button', { name: /new category/i });
+
+		await user.click(newCategoryButton);
+
+		const createCategoryFormTitle = screen.getByRole('heading', {
+			name: 'Create Category',
+			level: 2,
+		});
+
+		const createCategoryForm = screen.getByRole('form', { name: /create category/i });
+
+		expect(createCategoryForm).toBeVisible();
+		expect(createCategoryFormTitle).toBeVisible();
+	});
+
 	test('renders a categories table with column headers in the correct order', async () => {
 		customRender(<CategoriesPage />);
 
@@ -119,6 +138,85 @@ describe('Categories', () => {
 			);
 
 			expect(selectedText).toBeVisible();
+		});
+	});
+
+	describe('Category Creation', () => {
+		test('creates a category and shows a success message', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<CategoriesPage />
+				</>,
+			);
+
+			const newCategory = { id: categories.length + 1, name: 'My Test Category' };
+
+			mockServer.use(
+				http.get<PathParams, DefaultBodyType, CategoriesGetResponseType>(
+					CATEGORIES_BASE_URL,
+					() => {
+						return HttpResponse.json({
+							data: [...categories, newCategory],
+						});
+					},
+				),
+			);
+
+			const user = userEvent.setup();
+			const newCategoryButton = screen.getByRole('button', { name: /new category/i });
+
+			await user.click(newCategoryButton);
+
+			const createCategoryForm = screen.getByRole('form', { name: /create category/i });
+			const nameInput = within(createCategoryForm).getByLabelText('Name');
+			const createCategoryButton = within(createCategoryForm).getByRole('button', {
+				name: 'Create category',
+			});
+
+			await user.type(nameInput, newCategory.name);
+			await user.click(createCategoryButton);
+
+			const successMessage = await screen.findByText('Category created successfully!');
+			const newCategoryNameCell = await screen.findByRole('cell', {
+				name: newCategory.name,
+			});
+
+			expect(successMessage).toBeVisible();
+			expect(newCategoryNameCell).toBeVisible();
+		});
+
+		test('shows an error message when a category cannot be created', async () => {
+			mockServer.use(
+				http.post(CATEGORIES_BASE_URL, () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			customRender(
+				<>
+					<Toaster />
+					<CategoriesPage />
+				</>,
+			);
+
+			const user = userEvent.setup();
+			const newCategoryButton = screen.getByRole('button', { name: /new category/i });
+
+			await user.click(newCategoryButton);
+
+			const createCategoryForm = screen.getByRole('form', { name: /create category/i });
+			const nameInput = within(createCategoryForm).getByLabelText('Name');
+			const createCategoryButton = within(createCategoryForm).getByRole('button', {
+				name: 'Create category',
+			});
+
+			await user.type(nameInput, 'My Test Category');
+			await user.click(createCategoryButton);
+
+			const errorMessage = await screen.findByText('Failed to create a category.');
+
+			expect(errorMessage).toBeVisible();
 		});
 	});
 });
