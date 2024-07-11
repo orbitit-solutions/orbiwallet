@@ -3,6 +3,7 @@
 import { DataTable } from '@/components/ui/data-table';
 import { columns } from '@/app/(dashboard)/categories/columns';
 import { useCategories } from '@/features/categories/hooks/api/use-categories';
+import { useBulkDeleteCategories } from '../hooks/api/use-bulk-delete-categories';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 
 function CategoriesTable() {
@@ -12,6 +13,8 @@ function CategoriesTable() {
 		isError,
 		error,
 	} = useCategories();
+	const { isPending: isBulkDeleting, mutate: bulkDeleteMutate } =
+		useBulkDeleteCategories();
 
 	return (
 		<>
@@ -29,8 +32,11 @@ function CategoriesTable() {
 					data={categories}
 					tableCaption="A list of your categories"
 					filterKey="name"
-					disabled={false}
-					onBulkDelete={() => {}}
+					disabled={isBulkDeleting}
+					onBulkDelete={rows => {
+						const ids = rows.map(row => row.original.id);
+						bulkDeleteMutate({ ids });
+					}}
 					onDelete={() => {}}
 				/>
 			) : (

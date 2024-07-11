@@ -13,3 +13,11 @@ export type CategoryCreateRequestType = InferRequestType<
 export type CategoryCreateResponseType = InferResponseType<
 	typeof client.api.categories.$post
 >;
+
+export type CategoriesBulkDeleteRequestType = InferRequestType<
+	(typeof client.api.categories)['bulk-delete']['$post']
+>;
+
+export type CategoriesBulkDeleteResponseType = InferResponseType<
+	(typeof client.api.categories)['bulk-delete']['$post']
+>;

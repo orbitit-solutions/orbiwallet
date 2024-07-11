@@ -2,6 +2,8 @@ import { DefaultBodyType, http, HttpResponse, PathParams } from 'msw';
 
 import { categories } from '@/test/fixtures/categories';
 import {
+	CategoriesBulkDeleteRequestType,
+	CategoriesBulkDeleteResponseType,
 	CategoriesGetResponseType,
 	CategoryCreateRequestType,
 	CategoryCreateResponseType,
@@ -30,4 +32,12 @@ export const categoryHandlers = [
 			return HttpResponse.json({ data: newPost }, { status: 201 });
 		},
 	),
+	http.post<
+		PathParams,
+		CategoriesBulkDeleteRequestType['json'],
+		CategoriesBulkDeleteResponseType
+	>(`${CATEGORIES_BASE_URL}/bulk-delete`, async ({ request }) => {
+		const body = await request.json();
+		return HttpResponse.json({ data: body.ids.map(id => ({ id })) });
+	}),
 ];
