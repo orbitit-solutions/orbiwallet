@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { clerkMiddleware, getAuth } from '@hono/clerk-auth';
 import { HTTPException } from 'hono/http-exception';
 import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 
 import { db } from '@/db/drizzle';
 import { categories, insertCategorySchema } from '@/db/schema';
@@ -40,6 +41,29 @@ const app = new Hono()
 				.returning();
 
 			return ctx.json({ data: newCategory }, 201);
+		},
+	)
+	.post(
+		'/bulk-delete',
+		clerkMiddleware(),
+		zValidator('json', z.object({ ids: z.array(z.number().int().positive()) })),
+		async ctx => {
+			const auth = getAuth(ctx);
+
+			if (!auth?.userId) {
+				throw new HTTPException(401, { res: ctx.json({ error: 'Unauthorized' }, 401) });
+			}
+
+			const values = ctx.req.valid('json');
+
+			const data = await db
+				.delete(categories)
+				.where(
+					and(eq(categories.userId, auth.userId), inArray(categories.id, values.ids)),
+				)
+				.returning({ id: categories.id });
+
+			return ctx.json({ data });
 		},
 	);
 

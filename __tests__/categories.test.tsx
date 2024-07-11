@@ -219,4 +219,221 @@ describe('Categories', () => {
 			expect(errorMessage).toBeVisible();
 		});
 	});
+
+	describe('Category Bulk Deletion', () => {
+		test('deletes a category and shows a success message', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<CategoriesPage />
+				</>,
+			);
+
+			const deletedCategoryId = categories[0].id;
+
+			mockServer.use(
+				http.get<PathParams, DefaultBodyType, CategoriesGetResponseType>(
+					CATEGORIES_BASE_URL,
+					() => {
+						return HttpResponse.json({
+							data: categories.filter(category => category.id !== deletedCategoryId),
+						});
+					},
+				),
+			);
+
+			const user = userEvent.setup();
+
+			const categoriesTable = await screen.findByRole('table', {
+				name: categoriesTableCaption,
+			});
+
+			const selectCheckboxes = within(categoriesTable).getAllByRole('checkbox');
+
+			// Select checkbox for the first category
+			await user.click(selectCheckboxes[1]);
+
+			const deleteButton = screen.getByRole('button', {
+				name: `Delete 1 row`,
+			});
+
+			await user.click(deleteButton);
+
+			const confirmDialog = screen.getByRole('alertdialog', {
+				name: confirmDialogTitle,
+			});
+
+			const confirmButton = within(confirmDialog).getByRole('button', {
+				name: confirmButtonText,
+			});
+
+			await user.click(confirmButton);
+
+			const successMessage = await screen.findByText('Category deleted successfully!');
+
+			const deletedCategoryNameCell = screen.queryByRole('cell', {
+				name: categories[0].name,
+			});
+
+			expect(successMessage).toBeVisible();
+			expect(deletedCategoryNameCell).not.toBeInTheDocument();
+		});
+
+		test('deletes multiple selected categories and shows a success message', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<CategoriesPage />
+				</>,
+			);
+
+			const deletedCategoryIds = [categories[0].id, categories[1].id];
+
+			mockServer.use(
+				http.get<PathParams, DefaultBodyType, CategoriesGetResponseType>(
+					CATEGORIES_BASE_URL,
+					() => {
+						return HttpResponse.json({
+							data: categories.filter(
+								category => !deletedCategoryIds.includes(category.id),
+							),
+						});
+					},
+				),
+			);
+
+			const user = userEvent.setup();
+
+			const categoriesTable = await screen.findByRole('table', {
+				name: categoriesTableCaption,
+			});
+
+			const selectCheckboxes = within(categoriesTable).getAllByRole('checkbox');
+
+			// Select checkbox for the first two categories
+			await user.click(selectCheckboxes[1]);
+			await user.click(selectCheckboxes[2]);
+
+			const deleteButton = screen.getByRole('button', {
+				name: `Delete 2 rows`,
+			});
+
+			await user.click(deleteButton);
+
+			const confirmDialog = screen.getByRole('alertdialog', {
+				name: confirmDialogTitle,
+			});
+
+			const confirmButton = within(confirmDialog).getByRole('button', {
+				name: confirmButtonText,
+			});
+
+			await user.click(confirmButton);
+
+			const successMessage = await screen.findByText('Categories deleted successfully!');
+
+			const deletedCategory1NameCell = screen.queryByRole('cell', {
+				name: categories[0].name,
+			});
+
+			const deletedCategory2NameCell = screen.queryByRole('cell', {
+				name: categories[1].name,
+			});
+
+			expect(successMessage).toBeVisible();
+			expect(deletedCategory1NameCell).not.toBeInTheDocument();
+			expect(deletedCategory2NameCell).not.toBeInTheDocument();
+		});
+
+		test('shows an error message when a category cannot be deleted', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<CategoriesPage />
+				</>,
+			);
+
+			mockServer.use(
+				http.post(`${CATEGORIES_BASE_URL}/bulk-delete`, () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			const user = userEvent.setup();
+
+			const categoriesTable = await screen.findByRole('table', {
+				name: categoriesTableCaption,
+			});
+
+			const selectCheckboxes = within(categoriesTable).getAllByRole('checkbox');
+
+			await user.click(selectCheckboxes[1]);
+
+			const deleteButton = screen.getByRole('button', {
+				name: `Delete 1 row`,
+			});
+
+			await user.click(deleteButton);
+
+			const confirmDialog = screen.getByRole('alertdialog', {
+				name: confirmDialogTitle,
+			});
+
+			const confirmButton = within(confirmDialog).getByRole('button', {
+				name: confirmButtonText,
+			});
+
+			await user.click(confirmButton);
+
+			const errorMessage = await screen.findByText('Failed to delete category.');
+
+			expect(errorMessage).toBeVisible();
+		});
+
+		test('shows an error message when multiple selected categories cannot be deleted', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<CategoriesPage />
+				</>,
+			);
+
+			mockServer.use(
+				http.post(`${CATEGORIES_BASE_URL}/bulk-delete`, () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			const user = userEvent.setup();
+
+			const categoriesTable = await screen.findByRole('table', {
+				name: categoriesTableCaption,
+			});
+
+			const selectCheckboxes = within(categoriesTable).getAllByRole('checkbox');
+
+			await user.click(selectCheckboxes[1]);
+			await user.click(selectCheckboxes[2]);
+
+			const deleteButton = screen.getByRole('button', {
+				name: `Delete 2 rows`,
+			});
+
+			await user.click(deleteButton);
+
+			const confirmDialog = screen.getByRole('alertdialog', {
+				name: confirmDialogTitle,
+			});
+
+			const confirmButton = within(confirmDialog).getByRole('button', {
+				name: confirmButtonText,
+			});
+
+			await user.click(confirmButton);
+
+			const errorMessage = await screen.findByText('Failed to delete categories.');
+
+			expect(errorMessage).toBeVisible();
+		});
+	});
 });
