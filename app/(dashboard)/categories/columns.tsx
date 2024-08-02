@@ -5,6 +5,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import SortableColumnHeader from '@/components/ui/sortable-column-header';
 import { CategoriesGetResponseType } from '@/types/categories';
+import Actions from './actions';
 
 export type Category = CategoriesGetResponseType['data'][0];
 
@@ -38,5 +39,17 @@ export const columns: ColumnDef<Category>[] = [
 	{
 		accessorKey: 'name',
 		header: ({ column }) => <SortableColumnHeader column={column} title="Name" />,
+	},
+	{
+		id: 'actions',
+		enableHiding: false,
+		header: () => <span className="sr-only">Actions</span>,
+		cell: ({ row, table }) => (
+			<Actions
+				onClickEdit={() => {
+					table.options.meta?.onClickEdit?.(row.original.id);
+				}}
+			/>
+		),
 	},
 ];

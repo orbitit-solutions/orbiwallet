@@ -13,6 +13,8 @@ import { Toaster } from '@/components/ui/sonner';
 const categoriesTableCaption = /a list of your categories/i;
 const confirmDialogTitle = 'Are you sure?';
 const confirmButtonText = 'Confirm';
+const actionsButtonName = /open actions/i;
+const editCategoryDialogTitle = 'Edit Category';
 
 function getCategoryRows() {
 	const categoriesTable = screen.getByRole('table', {
@@ -96,6 +98,7 @@ describe('Categories', () => {
 		expect(columnHeaders[0]).toHaveAccessibleName(/select all/i);
 		expect(columnHeaders[1]).toHaveTextContent('ID');
 		expect(columnHeaders[2]).toHaveTextContent('Name');
+		expect(columnHeaders[3]).toHaveAccessibleName(/actions/i);
 	});
 
 	test('renders a categories table with category details in the correct order', async () => {
@@ -112,6 +115,9 @@ describe('Categories', () => {
 			expect(cells[0]).toHaveAccessibleName(/select row/i);
 			expect(cells[1]).toHaveTextContent(categories[i].id.toString());
 			expect(cells[2]).toHaveTextContent(categories[i].name);
+			expect(
+				within(cells[3]).getByRole('button', { name: actionsButtonName }),
+			).toBeInTheDocument();
 		});
 	});
 
@@ -215,6 +221,174 @@ describe('Categories', () => {
 			await user.click(createCategoryButton);
 
 			const errorMessage = await screen.findByText('Failed to create a category.');
+
+			expect(errorMessage).toBeVisible();
+		});
+	});
+
+	describe('Category Update', () => {
+		test('updates a category and shows a success message', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<CategoriesPage />
+				</>,
+			);
+
+			// Updating the first category
+			const updatedCategoryName = `${categories[0].name} updated`;
+
+			mockServer.use(
+				http.get<PathParams, DefaultBodyType, CategoriesGetResponseType>(
+					CATEGORIES_BASE_URL,
+					() => {
+						const updatedCategories = categories.map(category => {
+							if (category.id === categories[0].id) {
+								return { ...category, name: updatedCategoryName };
+							}
+
+							return category;
+						});
+
+						return HttpResponse.json({ data: updatedCategories });
+					},
+				),
+			);
+
+			const user = userEvent.setup();
+
+			const categoriesTable = await screen.findByRole('table', {
+				name: categoriesTableCaption,
+			});
+
+			const firstRowActionsButton = within(categoriesTable).getAllByRole('button', {
+				name: actionsButtonName,
+			})[0];
+
+			await user.click(firstRowActionsButton);
+
+			const actionsMenu = screen.getByRole('menu', { name: actionsButtonName });
+			const editMenuItem = within(actionsMenu).getByRole('menuitem', { name: 'Edit' });
+
+			await user.click(editMenuItem);
+
+			const editCategoryDialog = screen.getByRole('dialog', {
+				name: editCategoryDialogTitle,
+			});
+			const editCategoryForm = within(editCategoryDialog).getByRole('form', {
+				name: editCategoryDialogTitle,
+			});
+			const nameInput = within(editCategoryForm).getByLabelText('Name');
+			const editCategoryButton = within(editCategoryForm).getByRole('button', {
+				name: 'Edit category',
+			});
+
+			await user.clear(nameInput);
+			await user.type(nameInput, updatedCategoryName);
+			await user.click(editCategoryButton);
+
+			const successMessage = await screen.findByText('Category updated successfully!');
+			const updatedCategoryNameCell = await screen.findByRole('cell', {
+				name: updatedCategoryName,
+			});
+			const categoryNameCellBeforeUpdate = screen.queryByRole('cell', {
+				name: categories[0].name,
+			});
+
+			expect(successMessage).toBeVisible();
+			expect(updatedCategoryNameCell).toBeVisible();
+			expect(categoryNameCellBeforeUpdate).not.toBeInTheDocument();
+		});
+
+		test('shows an error message when category information cannot be fetched', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<CategoriesPage />
+				</>,
+			);
+
+			mockServer.use(
+				http.get(`${CATEGORIES_BASE_URL}/:id`, () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			const user = userEvent.setup();
+
+			const categoriesTable = await screen.findByRole('table', {
+				name: categoriesTableCaption,
+			});
+
+			const firstRowActionsButton = within(categoriesTable).getAllByRole('button', {
+				name: actionsButtonName,
+			})[0];
+
+			await user.click(firstRowActionsButton);
+
+			const actionsMenu = screen.getByRole('menu', { name: actionsButtonName });
+			const editMenuItem = within(actionsMenu).getByRole('menuitem', { name: 'Edit' });
+
+			await user.click(editMenuItem);
+
+			const editCategoryDialog = screen.getByRole('dialog', {
+				name: editCategoryDialogTitle,
+			});
+			const editCategoryForm = within(editCategoryDialog).queryByRole('form', {
+				name: editCategoryDialogTitle,
+			});
+			const errorMessage = within(editCategoryDialog).getByText(
+				'Failed to fetch category. Please try again later.',
+			);
+
+			expect(errorMessage).toBeVisible();
+			expect(editCategoryForm).not.toBeInTheDocument();
+		});
+
+		test('shows an error message when an account cannot be updated', async () => {
+			customRender(
+				<>
+					<Toaster />
+					<CategoriesPage />
+				</>,
+			);
+
+			mockServer.use(
+				http.patch(`${CATEGORIES_BASE_URL}/:id`, () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			const user = userEvent.setup();
+
+			const categoriesTable = await screen.findByRole('table', {
+				name: categoriesTableCaption,
+			});
+
+			const firstRowActionsButton = within(categoriesTable).getAllByRole('button', {
+				name: actionsButtonName,
+			})[0];
+
+			await user.click(firstRowActionsButton);
+
+			const actionsMenu = screen.getByRole('menu', { name: actionsButtonName });
+			const editMenuItem = within(actionsMenu).getByRole('menuitem', { name: 'Edit' });
+
+			await user.click(editMenuItem);
+
+			const editCategoryDialog = screen.getByRole('dialog', {
+				name: editCategoryDialogTitle,
+			});
+			const editCategoryForm = within(editCategoryDialog).getByRole('form', {
+				name: editCategoryDialogTitle,
+			});
+			const editCategoryButton = within(editCategoryForm).getByRole('button', {
+				name: 'Edit category',
+			});
+
+			await user.click(editCategoryButton);
+
+			const errorMessage = await screen.findByText('Failed to update category.');
 
 			expect(errorMessage).toBeVisible();
 		});

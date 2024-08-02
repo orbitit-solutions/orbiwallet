@@ -15,34 +15,41 @@ import {
 import { insertCategorySchema } from '@/db/schema';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useCreateCategory } from '../hooks/api/use-create-category';
+import { useEditCategory } from '../hooks/api/use-edit-category';
 
 const formSchema = insertCategorySchema.pick({ name: true });
 
 type FormData = z.infer<typeof formSchema>;
 
-interface CreateCategoryFormProps {
+interface EditCategoryFormProps {
+	categoryId: number | undefined;
 	onSuccess?: () => void;
+	defaultValues: FormData;
 }
 
-function CreateCategoryForm({ onSuccess }: CreateCategoryFormProps) {
+function EditCategoryForm({
+	categoryId,
+	onSuccess,
+	defaultValues,
+}: EditCategoryFormProps) {
 	const form = useForm<FormData>({
 		resolver: zodResolver(formSchema),
-		defaultValues: {
-			name: '',
-		},
+		defaultValues,
 	});
 
 	const formErrors = form.formState.errors;
 
-	const mutation = useCreateCategory();
+	const mutation = useEditCategory();
 
 	function onSubmit(formData: FormData) {
-		mutation.mutate(formData, {
-			onSuccess: () => {
-				onSuccess?.();
+		mutation.mutate(
+			{ param: { id: categoryId?.toString() }, json: formData },
+			{
+				onSuccess: () => {
+					onSuccess?.();
+				},
 			},
-		});
+		);
 	}
 
 	return (
@@ -50,11 +57,11 @@ function CreateCategoryForm({ onSuccess }: CreateCategoryFormProps) {
 			<form
 				onSubmit={form.handleSubmit(onSubmit)}
 				className="space-y-4"
-				aria-labelledby="createCategoryFormLabel"
+				aria-labelledby="editCategoryFormLabel"
 				noValidate
 			>
-				<span className="sr-only" id="createCategoryFormLabel">
-					Create Category
+				<span className="sr-only" id="editCategoryFormLabel">
+					Edit Category
 				</span>
 				<FormField
 					control={form.control}
@@ -75,11 +82,11 @@ function CreateCategoryForm({ onSuccess }: CreateCategoryFormProps) {
 					)}
 				/>
 				<Button className="w-full" disabled={mutation.isPending}>
-					{mutation.isPending ? <Loader2 /> : 'Create category'}
+					{mutation.isPending ? <Loader2 /> : 'Edit category'}
 				</Button>
 			</form>
 		</Form>
 	);
 }
 
-export default CreateCategoryForm;
+export default EditCategoryForm;
