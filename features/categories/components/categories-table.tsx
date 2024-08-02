@@ -6,7 +6,11 @@ import { useCategories } from '@/features/categories/hooks/api/use-categories';
 import { useBulkDeleteCategories } from '../hooks/api/use-bulk-delete-categories';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 
-function CategoriesTable() {
+interface CategoriesTableProps {
+	onClickEdit: (id: number) => void;
+}
+
+function CategoriesTable({ onClickEdit }: CategoriesTableProps) {
 	const {
 		data: categories,
 		isLoading: isCategoriesLoading,
@@ -38,6 +42,7 @@ function CategoriesTable() {
 						bulkDeleteMutate({ ids });
 					}}
 					onDelete={() => {}}
+					onClickEdit={onClickEdit}
 				/>
 			) : (
 				<p className="text-center min-h-[65vh] flex items-center justify-center">

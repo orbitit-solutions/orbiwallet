@@ -22,6 +22,35 @@ const app = new Hono()
 			.where(eq(categories.userId, auth.userId));
 		return ctx.json({ data });
 	})
+	.get(
+		'/:id',
+		clerkMiddleware(),
+		zValidator('param', z.object({ id: z.coerce.number().int().positive().optional() })),
+		async ctx => {
+			const auth = getAuth(ctx);
+
+			if (!auth?.userId) {
+				throw new HTTPException(401, { res: ctx.json({ error: 'Unauthorized' }, 401) });
+			}
+
+			const { id } = ctx.req.valid('param');
+
+			if (!id) {
+				return ctx.json({ error: 'ID missing' }, 400);
+			}
+
+			const [category] = await db
+				.select({ id: categories.id, name: categories.name })
+				.from(categories)
+				.where(and(eq(categories.userId, auth.userId), eq(categories.id, id)));
+
+			if (!category) {
+				return ctx.json({ error: 'Category not found' }, 404);
+			}
+
+			return ctx.json({ data: category });
+		},
+	)
 	.post(
 		'/',
 		clerkMiddleware(),
@@ -64,6 +93,39 @@ const app = new Hono()
 				.returning({ id: categories.id });
 
 			return ctx.json({ data });
+		},
+	)
+	.patch(
+		'/:id',
+		clerkMiddleware(),
+		zValidator('param', z.object({ id: z.coerce.number().int().positive().optional() })),
+		zValidator('json', insertCategorySchema.pick({ name: true })),
+		async ctx => {
+			const auth = getAuth(ctx);
+
+			if (!auth?.userId) {
+				throw new HTTPException(401, { res: ctx.json({ error: 'Unauthorized' }, 401) });
+			}
+
+			const { id } = ctx.req.valid('param');
+
+			if (!id) {
+				return ctx.json({ error: 'ID missing' }, 400);
+			}
+
+			const values = ctx.req.valid('json');
+
+			const [updatedCategory] = await db
+				.update(categories)
+				.set(values)
+				.where(and(eq(categories.userId, auth.userId), eq(categories.id, id)))
+				.returning({ id: categories.id, name: categories.name });
+
+			if (!updatedCategory) {
+				return ctx.json({ error: 'Category not found' }, 404);
+			}
+
+			return ctx.json({ data: updatedCategory });
 		},
 	);
 
